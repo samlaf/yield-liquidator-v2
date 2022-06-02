@@ -19,7 +19,8 @@
     "lint:ts": "prettier ./scripts/*.ts --check",
     "lint:ts:fix": "prettier ./scripts/*.ts --write",
     "prepublishOnly": "npx tsdx build --tsconfig ./tsconfig-publish.json",
-    "buildRouter": "tsc && pkg -o build/bin/router build/scripts/router.js"
+    "buildRouter": "tsc && pkg -o build/bin/router build/scripts/router.js",
+    "run:liquidatorTest": "RUST_BACKTRACE=1 RUST_LOG='yield_liquidator=debug' cargo run -- --chain-id 31337 -c /tmp/yield-config.json -p /tmp/yield-pk -s $(cat /tmp/yield-deployment-block) --min-ratio 50"
   },
   "devDependencies": {
     "@ethersproject/abi": "^5.0.0",

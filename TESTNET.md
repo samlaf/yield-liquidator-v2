@@ -28,9 +28,14 @@ Store the private key in a file (/tmp/pk) without the '0x' prefix, store the jso
 
 ### Run the liquidator
 
-In a new terminal, navigate back to the `yield-liquidator` directory and run:
+In a new terminal, navigate back to the `yield-liquidator` directory, run
 ```
-RUST_BACKTRACE=1 RUST_LOG="liquidator,yield_liquidator=debug" cargo run -- --chain_id 31337 -c config.json -p /tmp/pk -s BLOCK_NUMBER_AT_TIME_OF_DEPLOYMENT --min-ratio 50
+yarn
+yarn build
+```
+and finally run:
+```
+RUST_BACKTRACE=1 RUST_LOG="liquidator,yield_liquidator=debug" cargo run -- --chain-id 31337 -c config.json -p /tmp/pk -s BLOCK_NUMBER_AT_TIME_OF_DEPLOYMENT --min-ratio 50
 ```
 
 
@@ -72,6 +77,26 @@ Sep 15 11:05:34.947 DEBUG eloop{block=13228003}: yield_liquidator::liquidations:
 Sep 15 11:05:34.947 DEBUG eloop{block=13228003}: yield_liquidator::liquidations: found vault under auction, ignoring it vault_id=[189, 42, 16, 43, 22, 126, 95, 211, 104, 131, 167, 65] details=Vault { is_collateralized: false, under_auction: true, level: -500000000000000000, ink: [69, 84, 72, 0, 0, 0], art: [107, 137, 103, 254, 149, 15] }
 Sep 15 11:05:35.033 DEBUG eloop{block=13228003}: yield_liquidator::liquidations: Not time to buy yet vault_id=[189, 42, 16, 43, 22, 126, 95, 211, 104, 131, 167, 65] auction=Auction { started: 1631729706, under_auction: true, debt: 1000000000000000000, collateral: 1000000000000000000, ratio_pct: 100, is_at_minimal_price: false, debt_id: [68, 65, 73, 0, 0, 0], collateral_id: [69, 84, 72, 0, 0, 0], debt_address: 0x6b175474e89094c44da98b954eedeac495271d0f, collateral_address: 0xc02aaa39b223fe8d0a0e5c4f27ead9083c756cc2 }
 ```
+
+## TODO: getting a bug here...
+```
+eth_call
+  Contract call:       <UnrecognizedContract>
+  From:                0xf39fd6e51aad88f6f4ce6ab8827279cfffb92266
+  To:                  0x5ba1e12693dc8f9c48aad8770482f4739beed696
+
+  Error: VM Exception while processing transaction: reverted with reason string 'Multicall aggregate: call failed'
+      at <UnrecognizedContract>.<unknown> (0x5ba1e12693dc8f9c48aad8770482f4739beed696)
+      at runMicrotasks (<anonymous>)
+      at processTicksAndRejections (node:internal/process/task_queues:96:5)
+      at HardhatNode.runCall (/home/samlaf/devel/bots/liquidation-bots/yield-protocol/vault-v2/node_modules/hardhat/src/internal/hardhat-network/provider/node.ts:615:20)
+      at EthModule._callAction (/home/samlaf/devel/bots/liquidation-bots/yield-protocol/vault-v2/node_modules/hardhat/src/internal/hardhat-network/provider/modules/eth.ts:353:9)
+      at HardhatNetworkProvider._sendWithLogging (/home/samlaf/devel/bots/liquidation-bots/yield-protocol/vault-v2/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:139:22)
+      at HardhatNetworkProvider.request (/home/samlaf/devel/bots/liquidation-bots/yield-protocol/vault-v2/node_modules/hardhat/src/internal/hardhat-network/provider/provider.ts:116:18)
+      at JsonRpcHandler._handleRequest (/home/samlaf/devel/bots/liquidation-bots/yield-protocol/vault-v2/node_modules/hardhat/src/internal/hardhat-network/jsonrpc/handler.ts:188:20)
+```
+The bug happens [here](src/liquidations.rs#L302): "failed to get auction" because the multicall is failling... need to find which part is failing.
+## continues here...
 
 `Not time to buy yet` part is important here - the bot doesn't buy the debt right away. It either waits until collateral/debt ratio drops under the minimum specified, or the auction reaches the point when all of collateral is released.
 In our exercise, we set the minimal collateral/debt ratio to 50% (`--min-ratio 50`) which is impractical, but good enough for demo purposes.
